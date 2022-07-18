@@ -1,14 +1,14 @@
 import os
 import ffmpeg
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, simpledialog
 from datetime import datetime
 
 '''
 This program converts a bunch of images into a video format that can be imported on the Dataphysics OCA 15plus.
 
 Input: folder with images (tiff, png, jpg, jpeg, bmp)
-Output: video file (height:768, format:pal8, codec:rawvideo)
+Output: video file (codec:rawvideo)
 
 NOTE To run this code:
 1. install FFmpeg locally with correct enviromental variables! https://www.wikihow.com/Install-FFmpeg-on-Windows
@@ -22,17 +22,23 @@ July 2022 - Physics of Complex Fluids
 #  python -m PyInstaller -F main.py -n OCA_TiffToVideo
 
 print('----- Image to video converter for Dataphysics OCA 15plus -----')
-print('Special thanks to Harro Beens for figuring out the correct format, codec and scaling.\n')
+print('Special thanks to Harro Beens for figuring out the correct codec.\n')
 print('Select folder with images ...')
 
 root = tk.Tk()
 root.withdraw()
 folder_path = filedialog.askdirectory()
+
+print('Give the desired height of the output video.')
+newHeight = simpledialog.askinteger('Output video height', 'Output video height', minvalue=1, maxvalue=3000, initialvalue=1800)
+
 now = datetime.now()
 
 filenameExport = f"{os.path.basename(os.path.normpath(folder_path))}_PROC{now.strftime('%Y-%m-%d-%H-%M-%S')}.avi"
 
-images = [os.path.join(folder_path, img) for img in os.listdir(folder_path) if img.endswith(".tiff") or img.endswith(".png") or img.endswith(".jpg") or img.endswith(".jpeg") or img.endswith(".bmp")]
+images = [os.path.join(folder_path, img) for img in os.listdir(folder_path) if
+          img.endswith(".tiff") or img.endswith(".png") or img.endswith(".jpg") or img.endswith(
+              ".jpeg") or img.endswith(".bmp")]
 if not images:
     raise Exception("No images with extension '.tiff', '.png', '.jpg', '.jpeg' or '.bmp' found in selected folder.")
 
@@ -40,12 +46,11 @@ with open('temp.txt', 'w') as f:
     for image in images:
         f.write(f"file '{image}'\n")
 
-
 try:
     out, _ = (
         ffmpeg
             .input('temp.txt', r='1', f='concat', safe='0')
-            .output(filenameExport, pix_fmt='pal8', vf='scale=768:-1', vcodec='rawvideo')
+            .output(filenameExport, vf=f'scale={newHeight}:-1', vcodec='rawvideo', crf=0)
             .run(overwrite_output=True)
     )
 except ffmpeg.Error as e:
